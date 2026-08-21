@@ -450,7 +450,7 @@ with col1:
         pdf_upload = None
         pdf_path_input = st.text_input(
             "Reference PDF Path",
-            placeholder=r"e.g. D:\path\to\sample_data\input.pdf",
+            placeholder=r"e.g. C:\Documents\Files\sample_reference.pdf",
             help="Enter local file path to the reference PDF file."
         )
         if pdf_path_input:
@@ -470,11 +470,10 @@ with col2:
         horizontal=True,
     )
     if template_source == "Local Folder Path":
-        default_folder_val = r"D:\Kishore\TEM\EC" if os.path.exists(r"D:\Kishore\TEM\EC") else ""
         template_folder_input = st.text_input(
             "Word Templates Folder Path",
-            value=default_folder_val,
-            placeholder=r"e.g. D:\Kishore\TEM\EC",
+            value="",
+            placeholder=r"e.g. C:\Documents\Templates or D:\Folder\Word_Templates",
             help="Enter absolute or relative path to folder containing .docx templates.",
         )
         template_uploads = None
