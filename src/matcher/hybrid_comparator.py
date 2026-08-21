@@ -495,7 +495,7 @@ class HybridComparator:
         max_workers: int = 8,
         top_k: int = 20,
         compare_all: bool = True,
-        max_candidates: int = 5,
+        max_candidates: int = 50,
         progress_callback: Optional[Callable[[int, int, str], None]] = None
     ) -> List[MatchResult]:
         """Stage 2-6 retrieval pipeline over the indexed corpus. Accepted

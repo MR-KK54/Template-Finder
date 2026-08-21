@@ -702,6 +702,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
         all_results = comparator.compare_batch(
             pdf_document,
             indexed_documents,
+            max_candidates=50,
             progress_callback=lambda done, total, name: compare_progress.progress(
                 done / max(1, total),
                 text=f"🔬 Deep Comparing {done}/{total} documents: {name}",
