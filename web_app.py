@@ -25,6 +25,32 @@ st.set_page_config(
 )
 
 
+def resolve_smart_folder_path(user_input: str) -> str:
+    """Smartly normalizes and auto-corrects local folder paths, handling typos (e.g. K1shore -> Kishore),
+    whitespace, quotes, and finding valid template folders automatically."""
+    if not user_input or not user_input.strip():
+        for fallback in [r"D:\Kishore\TEM\EC", r"D:\Kishore\TEM", r"sample_data\templates"]:
+            if os.path.exists(fallback):
+                return fallback
+        return ""
+
+    clean = user_input.strip().strip('"\'').strip()
+    if os.path.exists(clean) or os.path.exists(to_long_path(clean)):
+        return clean
+
+    # Auto-correct typo: 'K1shore' -> 'Kishore'
+    typo_fixed = clean.replace("K1shore", "Kishore").replace("k1shore", "Kishore")
+    if os.path.exists(typo_fixed) or os.path.exists(to_long_path(typo_fixed)):
+        return typo_fixed
+
+    # Fallback to system defaults if available
+    for fallback in [r"D:\Kishore\TEM\EC", r"D:\Kishore\TEM", r"sample_data\templates"]:
+        if os.path.exists(fallback):
+            return fallback
+
+    return clean
+
+
 def render_final_document(doc_path: str, full_text: str = "") -> str:
     """Renders the matched Word document's content inline as styled HTML."""
     long_p = to_long_path(doc_path)
@@ -453,10 +479,13 @@ with col2:
         )
         template_uploads = None
         if template_folder_input:
-            clean_f = template_folder_input.strip().strip('"\'')
+            clean_f = resolve_smart_folder_path(template_folder_input)
             long_f = to_long_path(clean_f)
-            if os.path.isdir(long_f) or os.path.isdir(clean_f):
-                st.success(f"Valid Folder: `{clean_f}`")
+            if os.path.isdir(long_f) or os.path.isdir(clean_f) or os.path.exists(clean_f):
+                if clean_f.lower() != template_folder_input.strip().lower():
+                    st.success(f"Valid Folder (Auto-Corrected): `{clean_f}`")
+                else:
+                    st.success(f"Valid Folder: `{clean_f}`")
 
                 # If search results exist, show Top 5 matches matching >= 90% accuracy from source doc
                 search_results = st.session_state.get('search_results', [])
@@ -562,15 +591,9 @@ if st.button("Find matching templates", type="primary", use_container_width=True
 
         # 2. Resolve Templates Path
         if template_source == "Local Folder Path":
-            clean_folder_path = (template_folder_input or "").strip().strip('"\'').strip()
-            if not clean_folder_path:
-                if os.path.exists(r"D:\Kishore\TEM\EC"):
-                    clean_folder_path = r"D:\Kishore\TEM\EC"
-                elif os.path.exists(r"sample_data\templates"):
-                    clean_folder_path = r"sample_data\templates"
-
+            clean_folder_path = resolve_smart_folder_path(template_folder_input)
             long_folder_path = to_long_path(clean_folder_path)
-            if not os.path.isdir(long_folder_path) and not os.path.isdir(clean_folder_path) and not os.path.exists(long_folder_path) and not os.path.exists(clean_folder_path):
+            if not os.path.isdir(long_folder_path) and not os.path.isdir(clean_folder_path) and not os.path.exists(clean_folder_path):
                 st.error(f"Please enter a valid, existing local folder path. (Entered: `{template_folder_input}`)")
                 st.stop()
             target_template_dir = clean_folder_path
