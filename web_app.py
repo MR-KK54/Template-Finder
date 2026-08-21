@@ -812,8 +812,8 @@ if search_performed and results:
                 st.caption(f"✅ Matched by: **{result.match_basis or 'full document'}** "
                            f"(front page {result.front_coverage:.1f}%)")
 
-            # 4 Action Buttons: Open in Word | 💾 Save As (.docx) | 📄 Compare PDF | 👁️ Preview
-            c_open, c_save, c_pdf, c_prev = st.columns(4)
+            # 3 Action Buttons: Open in Word | 💾 Save As | 👁️ Preview
+            c_open, c_save, c_prev = st.columns(3)
             with c_open:
                 if st.button("📂 Open in Word", key=f"btn_open_final_{idx}", use_container_width=True):
                     try:
@@ -828,7 +828,7 @@ if search_performed and results:
                 if os.path.exists(real_save_path):
                     with open(real_save_path, "rb") as file_data:
                         st.download_button(
-                            label="💾 Save As (.docx)",
+                            label="💾 Save As",
                             data=file_data,
                             file_name=result.word_file_name,
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -837,21 +837,6 @@ if search_performed and results:
                         )
                 else:
                     st.button("💾 Save As", key=f"btn_save_disabled_{idx}", disabled=True, use_container_width=True)
-
-            with c_pdf:
-                pdf_bytes_data = convert_docx_to_pdf_bytes(result.file_path)
-                pdf_name = os.path.splitext(result.word_file_name)[0] + "_compare.pdf"
-                if pdf_bytes_data:
-                    st.download_button(
-                        label="📄 Compare PDF",
-                        data=pdf_bytes_data,
-                        file_name=pdf_name,
-                        mime="application/pdf",
-                        key=f"btn_pdf_download_{idx}",
-                        use_container_width=True
-                    )
-                else:
-                    st.button("📄 Compare PDF", key=f"btn_pdf_disabled_{idx}", disabled=True, use_container_width=True)
 
             with c_prev:
                 btn_label = "👁️ Preview (showing)" if (idx == curr_preview_idx and is_preview_vis) else "👁️ Preview"
