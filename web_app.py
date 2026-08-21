@@ -52,6 +52,39 @@ def resolve_smart_folder_path(user_input: str) -> str:
     return norm_p
 
 
+def convert_docx_to_pdf_bytes(docx_path: str) -> bytes:
+    """Converts a Word .docx document to PDF bytes for side-by-side comparison."""
+    long_p = to_long_path(docx_path)
+    real_p = long_p if os.path.exists(long_p) else docx_path
+    if not os.path.exists(real_p):
+        return b""
+
+    # 1. Try Microsoft Word COM on Windows
+    try:
+        import win32com.client
+        import tempfile
+        word = win32com.client.Dispatch("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        doc = word.Documents.Open(os.path.abspath(real_p), ReadOnly=True)
+        tmp_pdf = tempfile.mktemp(suffix=".pdf")
+        doc.SaveAs2(tmp_pdf, FileFormat=17)  # 17 = wdFormatPDF
+        doc.Close(False)
+        word.Quit()
+        if os.path.exists(tmp_pdf):
+            with open(tmp_pdf, "rb") as f:
+                data = f.read()
+            try:
+                os.remove(tmp_pdf)
+            except Exception:
+                pass
+            return data
+    except Exception:
+        pass
+
+    return b""
+
+
 def render_final_document(doc_path: str, full_text: str = "") -> str:
     """Renders the matched Word document's content inline as styled HTML."""
     long_p = to_long_path(doc_path)
@@ -726,16 +759,7 @@ if search_performed and results:
 
     st.divider()
     st.subheader("📦 FINAL OUTPUT")
-
-    c_output_title, c_path_toggle = st.columns([3, 2])
-    with c_output_title:
-        st.markdown(f"**{len(results)} document(s) passed all verification stages:**")
-    with c_path_toggle:
-        show_full_paths = st.checkbox(
-            "☑️ Show full file paths in final output",
-            value=True,
-            help="Toggle to display or hide absolute directory paths alongside file names."
-        )
+    st.markdown(f"**{len(results)} document(s) passed all verification stages:**")
 
     with st.container(border=True):
         if is_verified:
@@ -776,11 +800,10 @@ if search_performed and results:
             else:
                 st.markdown(f"### 📄 {result.word_file_name}")
 
-            # File name + file path (controlled by show_full_paths checkbox)
+            # File name + file path
             st.markdown(f"**File Name:** `{result.word_file_name}`")
-            if show_full_paths:
-                st.markdown("**File Path:**")
-                st.code(result.file_path, language="text")
+            st.markdown("**File Path:**")
+            st.code(result.file_path, language="text")
 
             if getattr(result, 'rejected', False):
                 st.error(f"❌ **Rejected because:** {result.rejected_reason or 'Unknown reason'}")
@@ -789,8 +812,8 @@ if search_performed and results:
                 st.caption(f"✅ Matched by: **{result.match_basis or 'full document'}** "
                            f"(front page {result.front_coverage:.1f}%)")
 
-            # 3 Action Buttons: Open in Word | 💾 Save As | 👁️ Preview
-            c_open, c_save, c_prev = st.columns(3)
+            # 4 Action Buttons: Open in Word | 💾 Save As (.docx) | 📄 Compare PDF | 👁️ Preview
+            c_open, c_save, c_pdf, c_prev = st.columns(4)
             with c_open:
                 if st.button("📂 Open in Word", key=f"btn_open_final_{idx}", use_container_width=True):
                     try:
@@ -805,7 +828,7 @@ if search_performed and results:
                 if os.path.exists(real_save_path):
                     with open(real_save_path, "rb") as file_data:
                         st.download_button(
-                            label="💾 Save As",
+                            label="💾 Save As (.docx)",
                             data=file_data,
                             file_name=result.word_file_name,
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -814,6 +837,21 @@ if search_performed and results:
                         )
                 else:
                     st.button("💾 Save As", key=f"btn_save_disabled_{idx}", disabled=True, use_container_width=True)
+
+            with c_pdf:
+                pdf_bytes_data = convert_docx_to_pdf_bytes(result.file_path)
+                pdf_name = os.path.splitext(result.word_file_name)[0] + "_compare.pdf"
+                if pdf_bytes_data:
+                    st.download_button(
+                        label="📄 Compare PDF",
+                        data=pdf_bytes_data,
+                        file_name=pdf_name,
+                        mime="application/pdf",
+                        key=f"btn_pdf_download_{idx}",
+                        use_container_width=True
+                    )
+                else:
+                    st.button("📄 Compare PDF", key=f"btn_pdf_disabled_{idx}", disabled=True, use_container_width=True)
 
             with c_prev:
                 btn_label = "👁️ Preview (showing)" if (idx == curr_preview_idx and is_preview_vis) else "👁️ Preview"
