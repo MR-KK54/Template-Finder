@@ -444,9 +444,11 @@ with col2:
         horizontal=True,
     )
     if template_source == "Local Folder Path":
+        default_folder_val = r"D:\Kishore\TEM\EC" if os.path.exists(r"D:\Kishore\TEM\EC") else ""
         template_folder_input = st.text_input(
             "Word Templates Folder Path",
-            placeholder=r"e.g. D:\path\to\sample_data\templates",
+            value=default_folder_val,
+            placeholder=r"e.g. D:\Kishore\TEM\EC",
             help="Enter absolute or relative path to folder containing .docx templates.",
         )
         template_uploads = None
@@ -549,19 +551,27 @@ if st.button("Find matching templates", type="primary", use_container_width=True
             pdf_path.write_bytes(pdf_upload.getvalue())
             target_pdf_path = str(pdf_path)
         else:
-            clean_pdf_path = (pdf_path_input or "").strip().strip('"\'')
+            clean_pdf_path = (pdf_path_input or "").strip().strip('"\'').strip()
+            if not clean_pdf_path and os.path.exists(r"sample_data\chile_reference.pdf"):
+                clean_pdf_path = r"sample_data\chile_reference.pdf"
             long_pdf_path = to_long_path(clean_pdf_path)
             if not os.path.isfile(long_pdf_path) and not os.path.isfile(clean_pdf_path):
-                st.error("Please enter a valid, existing local PDF file path.")
+                st.error(f"Please enter a valid, existing local PDF file path. (Got: `{clean_pdf_path}`)")
                 st.stop()
             target_pdf_path = clean_pdf_path
 
         # 2. Resolve Templates Path
         if template_source == "Local Folder Path":
-            clean_folder_path = (template_folder_input or "").strip().strip('"\'')
+            clean_folder_path = (template_folder_input or "").strip().strip('"\'').strip()
+            if not clean_folder_path:
+                if os.path.exists(r"D:\Kishore\TEM\EC"):
+                    clean_folder_path = r"D:\Kishore\TEM\EC"
+                elif os.path.exists(r"sample_data\templates"):
+                    clean_folder_path = r"sample_data\templates"
+
             long_folder_path = to_long_path(clean_folder_path)
-            if not os.path.exists(long_folder_path) and not os.path.exists(clean_folder_path):
-                st.error("Please enter a valid, existing local folder path.")
+            if not os.path.isdir(long_folder_path) and not os.path.isdir(clean_folder_path) and not os.path.exists(long_folder_path) and not os.path.exists(clean_folder_path):
+                st.error(f"Please enter a valid, existing local folder path. (Entered: `{template_folder_input}`)")
                 st.stop()
             target_template_dir = clean_folder_path
         else:
