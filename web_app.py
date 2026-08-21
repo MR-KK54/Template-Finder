@@ -85,6 +85,35 @@ def convert_docx_to_pdf_bytes(docx_path: str) -> bytes:
     return b""
 
 
+def save_file_as_dialog(source_filepath: str, default_filename: str) -> Optional[str]:
+    """Opens a native Windows Save As dialog to save/copy the file directly to the user's chosen local path."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        import shutil
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+
+        ext = os.path.splitext(default_filename)[1] or ".docx"
+        dest_path = filedialog.asksaveasfilename(
+            title="Save As - Choose Save Location",
+            initialfile=default_filename,
+            filetypes=[("Word Document", f"*{ext}"), ("All Files", "*.*")]
+        )
+        root.destroy()
+
+        if dest_path:
+            long_src = to_long_path(source_filepath)
+            src = long_src if os.path.exists(long_src) else source_filepath
+            shutil.copyfile(src, dest_path)
+            return dest_path
+    except Exception as e:
+        logger.error(f"Error in Save As dialog: {e}")
+    return None
+
+
 def render_final_document(doc_path: str, full_text: str = "") -> str:
     """Renders the matched Word document's content inline as styled HTML."""
     long_p = to_long_path(doc_path)
@@ -799,20 +828,26 @@ if search_performed and results:
                         st.error(f"Could not open file: {e}")
 
             with c_save:
-                long_save_path = to_long_path(result.file_path)
-                real_save_path = long_save_path if os.path.exists(long_save_path) else result.file_path
-                if os.path.exists(real_save_path):
-                    with open(real_save_path, "rb") as file_data:
-                        st.download_button(
-                            label="💾 Save As",
-                            data=file_data,
-                            file_name=result.word_file_name,
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            key=f"btn_save_as_{idx}",
-                            use_container_width=True
-                        )
-                else:
-                    st.button("💾 Save As", key=f"btn_save_disabled_{idx}", disabled=True, use_container_width=True)
+                if st.button("💾 Save As", key=f"btn_save_as_{idx}", use_container_width=True):
+                    saved_path = save_file_as_dialog(result.file_path, result.word_file_name)
+                    if saved_path:
+                        st.toast(f"✅ File saved successfully to: `{saved_path}`")
+                    else:
+                        st.session_state[f"show_dl_{idx}"] = True
+
+                if st.session_state.get(f"show_dl_{idx}", False):
+                    long_save_path = to_long_path(result.file_path)
+                    real_save_path = long_save_path if os.path.exists(long_save_path) else result.file_path
+                    if os.path.exists(real_save_path):
+                        with open(real_save_path, "rb") as file_data:
+                            st.download_button(
+                                label="⬇️ Download File",
+                                data=file_data,
+                                file_name=result.word_file_name,
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                key=f"btn_save_as_dl_{idx}",
+                                use_container_width=True
+                            )
 
             with c_prev:
                 btn_label = "👁️ Preview (showing)" if (idx == curr_preview_idx and is_preview_vis) else "👁️ Preview"
