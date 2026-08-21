@@ -26,12 +26,9 @@ st.set_page_config(
 
 
 def resolve_smart_folder_path(user_input: str) -> str:
-    """Smartly normalizes and auto-corrects local folder paths, handling typos (e.g. K1shore -> Kishore),
-    whitespace, quotes, and finding valid template folders automatically."""
+    """Smartly normalizes manually entered local folder paths (handling typos like K1shore -> Kishore,
+    whitespace, and quotes) without saving or persisting the path."""
     if not user_input or not user_input.strip():
-        for fallback in [r"D:\Kishore\TEM\EC", r"D:\Kishore\TEM", r"sample_data\templates"]:
-            if os.path.exists(fallback):
-                return fallback
         return ""
 
     clean = user_input.strip().strip('"\'').strip()
@@ -42,11 +39,6 @@ def resolve_smart_folder_path(user_input: str) -> str:
     typo_fixed = clean.replace("K1shore", "Kishore").replace("k1shore", "Kishore")
     if os.path.exists(typo_fixed) or os.path.exists(to_long_path(typo_fixed)):
         return typo_fixed
-
-    # Fallback to system defaults if available
-    for fallback in [r"D:\Kishore\TEM\EC", r"D:\Kishore\TEM", r"sample_data\templates"]:
-        if os.path.exists(fallback):
-            return fallback
 
     return clean
 
@@ -580,11 +572,9 @@ if st.button("Find matching templates", type="primary", use_container_width=True
             target_pdf_path = str(pdf_path)
         else:
             clean_pdf_path = (pdf_path_input or "").strip().strip('"\'').strip()
-            if not clean_pdf_path and os.path.exists(r"sample_data\chile_reference.pdf"):
-                clean_pdf_path = r"sample_data\chile_reference.pdf"
             long_pdf_path = to_long_path(clean_pdf_path)
-            if not os.path.isfile(long_pdf_path) and not os.path.isfile(clean_pdf_path):
-                st.error(f"Please enter a valid, existing local PDF file path. (Got: `{clean_pdf_path}`)")
+            if not clean_pdf_path or (not os.path.isfile(long_pdf_path) and not os.path.isfile(clean_pdf_path)):
+                st.error(f"Please enter a valid, existing local PDF file path. (Entered: `{pdf_path_input}`)")
                 st.stop()
             target_pdf_path = clean_pdf_path
 
