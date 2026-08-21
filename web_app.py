@@ -642,17 +642,17 @@ if st.button("Find matching templates", type="primary", use_container_width=True
         database = IndexDatabase("index_cache.db")
         index_manager = IndexManager(database)
 
-        with st.status("Indexing Word templates...", expanded=False) as status:
+        with st.status("🔍 Executing Deep Search — Indexing Word templates...", expanded=False) as status:
             indexed_documents = index_manager.index_directory(target_template_dir)
             st.session_state['indexed_texts'] = {
                 doc.filepath: doc.full_text for doc in indexed_documents if getattr(doc, 'full_text', None)
             }
             status.update(
-                label=f"Indexed {len(indexed_documents)} template(s)",
+                label=f"🔍 Deep Search Indexed {len(indexed_documents)} template(s)",
                 state="complete",
             )
 
-        with st.spinner("Extracting PDF features..."):
+        with st.spinner("🧠 Deep Extracting PDF Features & Protocol Identifiers..."):
             pdf_document = PDFExtractor().extract(target_pdf_path)
 
         if page_rec_mode == "Manual Page Selection" and pdf_document.pages:
@@ -683,13 +683,13 @@ if st.button("Find matching templates", type="primary", use_container_width=True
             pass
 
         comparator = HybridComparator()
-        compare_progress = st.progress(0.0, text="Preparing comparison...")
+        compare_progress = st.progress(0.0, text="⚡ Deep Search: Executing 6-Stage AI Comparison Engine...")
         all_results = comparator.compare_batch(
             pdf_document,
             indexed_documents,
             progress_callback=lambda done, total, name: compare_progress.progress(
                 done / max(1, total),
-                text=f"Comparing {done}/{total} documents: {name}",
+                text=f"🔬 Deep Comparing {done}/{total} documents: {name}",
             ),
         )
         compare_progress.empty()
