@@ -742,7 +742,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
         with st.spinner("Ranking results..."):
             all_sorted = sorted(all_results, key=lambda r: r.overall_score, reverse=True)
             non_rejected = [r for r in all_sorted if not r.rejected]
-            results = non_rejected if non_rejected else all_sorted
+            results = (non_rejected if non_rejected else all_sorted)[:5]
 
             st.session_state['search_performed'] = True
             st.session_state['search_results'] = results
