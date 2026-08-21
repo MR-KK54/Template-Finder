@@ -25,22 +25,31 @@ st.set_page_config(
 )
 
 
+import re
+
 def resolve_smart_folder_path(user_input: str) -> str:
     """Smartly normalizes manually entered local folder paths (handling typos like K1shore -> Kishore,
-    whitespace, and quotes) without saving or persisting the path."""
+    unicode quotes, zero-width characters, and trailing slashes) without saving or persisting the path."""
     if not user_input or not user_input.strip():
         return ""
 
-    clean = user_input.strip().strip('"\'').strip()
+    clean = re.sub(r'[\u200b\u200c\u200d\u200e\u200f\ufeff\r\n\t]', '', user_input)
+    clean = clean.strip().strip('"\'“”‘’').strip()
+    if not clean:
+        return ""
+
+    norm_p = os.path.normpath(clean)
+    if os.path.exists(norm_p) or os.path.exists(to_long_path(norm_p)):
+        return norm_p
     if os.path.exists(clean) or os.path.exists(to_long_path(clean)):
         return clean
 
     # Auto-correct typo: 'K1shore' -> 'Kishore'
-    typo_fixed = clean.replace("K1shore", "Kishore").replace("k1shore", "Kishore")
+    typo_fixed = norm_p.replace("K1shore", "Kishore").replace("k1shore", "Kishore")
     if os.path.exists(typo_fixed) or os.path.exists(to_long_path(typo_fixed)):
         return typo_fixed
 
-    return clean
+    return norm_p
 
 
 def render_final_document(doc_path: str, full_text: str = "") -> str:
