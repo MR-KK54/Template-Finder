@@ -687,6 +687,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
         if page_rec_mode == "Manual Page Selection" and pdf_document.pages:
             selected_idx = min(max(1, target_pdf_page_num), len(pdf_document.pages)) - 1
             page_data = pdf_document.pages[selected_idx]
+            raw_full_text = pdf_document.full_text
             pdf_document = DocumentFeatures(
                 filepath=pdf_document.filepath,
                 filename=pdf_document.filename,
@@ -694,7 +695,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
                 file_size=pdf_document.file_size,
                 last_modified=pdf_document.last_modified,
                 file_hash=pdf_document.file_hash,
-                full_text=page_data.text,
+                full_text=page_data.text + "\n\n" + raw_full_text,
                 headings=page_data.headings,
                 paragraphs=page_data.text.split("\n"),
                 tables=page_data.tables,
@@ -707,6 +708,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
             )
         elif page_rec_mode == "Default (First Page)" and pdf_document.pages:
             page_data = pdf_document.pages[0]
+            raw_full_text = pdf_document.full_text
             pdf_document = DocumentFeatures(
                 filepath=pdf_document.filepath,
                 filename=pdf_document.filename,
@@ -714,7 +716,7 @@ if st.button("Find matching templates", type="primary", use_container_width=True
                 file_size=pdf_document.file_size,
                 last_modified=pdf_document.last_modified,
                 file_hash=pdf_document.file_hash,
-                full_text=page_data.text,
+                full_text=page_data.text + "\n\n" + raw_full_text,
                 headings=page_data.headings,
                 paragraphs=page_data.text.split("\n"),
                 tables=page_data.tables,
