@@ -717,6 +717,17 @@ if search_performed and results:
 
     st.divider()
     st.subheader("📦 FINAL OUTPUT")
+
+    c_output_title, c_path_toggle = st.columns([3, 2])
+    with c_output_title:
+        st.markdown(f"**{len(results)} document(s) passed all verification stages:**")
+    with c_path_toggle:
+        show_full_paths = st.checkbox(
+            "☑️ Show full file paths in final output",
+            value=True,
+            help="Toggle to display or hide absolute directory paths alongside file names."
+        )
+
     with st.container(border=True):
         if is_verified:
             top = verified[0]
@@ -733,7 +744,6 @@ if search_performed and results:
                 f"{getattr(top, 'text_coverage', 0):.1f}%).\n\n"
                 "Make sure the original Word file is inside the selected folder and the PDF is a direct export/scan of it."
             )
-        st.markdown(f"**{len(results)} document(s) passed all verification stages:**")
 
     indexed_texts = st.session_state.get('indexed_texts', {})
 
@@ -757,10 +767,11 @@ if search_performed and results:
             else:
                 st.markdown(f"### 📄 {result.word_file_name}")
 
-            # File name + file path - always visible
+            # File name + file path (controlled by show_full_paths checkbox)
             st.markdown(f"**File Name:** `{result.word_file_name}`")
-            st.markdown("**File Path:**")
-            st.code(result.file_path, language="text")
+            if show_full_paths:
+                st.markdown("**File Path:**")
+                st.code(result.file_path, language="text")
 
             if getattr(result, 'rejected', False):
                 st.error(f"❌ **Rejected because:** {result.rejected_reason or 'Unknown reason'}")
@@ -769,7 +780,8 @@ if search_performed and results:
                 st.caption(f"✅ Matched by: **{result.match_basis or 'full document'}** "
                            f"(front page {result.front_coverage:.1f}%)")
 
-            c_open, c_prev = st.columns(2)
+            # 3 Action Buttons: Open in Word | 💾 Save As | 👁️ Preview
+            c_open, c_save, c_prev = st.columns(3)
             with c_open:
                 if st.button("📂 Open in Word", key=f"btn_open_final_{idx}", use_container_width=True):
                     try:
@@ -777,6 +789,23 @@ if search_performed and results:
                         st.toast(f"Opening {result.word_file_name}...")
                     except Exception as e:
                         st.error(f"Could not open file: {e}")
+
+            with c_save:
+                long_save_path = to_long_path(result.file_path)
+                real_save_path = long_save_path if os.path.exists(long_save_path) else result.file_path
+                if os.path.exists(real_save_path):
+                    with open(real_save_path, "rb") as file_data:
+                        st.download_button(
+                            label="💾 Save As",
+                            data=file_data,
+                            file_name=result.word_file_name,
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key=f"btn_save_as_{idx}",
+                            use_container_width=True
+                        )
+                else:
+                    st.button("💾 Save As", key=f"btn_save_disabled_{idx}", disabled=True, use_container_width=True)
+
             with c_prev:
                 btn_label = "👁️ Preview (showing)" if (idx == curr_preview_idx and is_preview_vis) else "👁️ Preview"
                 if st.button(btn_label, key=f"btn_preview_{idx}", use_container_width=True):
