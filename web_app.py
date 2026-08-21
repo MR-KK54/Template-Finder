@@ -710,33 +710,10 @@ if st.button("Find matching templates", type="primary", use_container_width=True
         compare_progress.empty()
 
         with st.spinner("Ranking results..."):
-            results = sorted(
-                (result for result in all_results
-                 if not result.rejected and (result.overall_score >= threshold or result.verified_source)),
-                key=lambda result: result.overall_score,
-                reverse=True,
-            )
-            if front_page_only:
-                results = [r for r in results if getattr(r, 'verified_source', False)]
+            all_sorted = sorted(all_results, key=lambda r: r.overall_score, reverse=True)
+            non_rejected = [r for r in all_sorted if not r.rejected]
+            results = non_rejected if non_rejected else all_sorted
 
-            # Never leave the user with a dead end: if nothing cleared the
-            # threshold, fall back to the best candidates so the FINAL OUTPUT
-            # section always has a file to show (rejected ones keep their
-            # rejection reason so the failure is visible).
-            if not results:
-                non_rejected = sorted(
-                    (r for r in all_results if not r.rejected),
-                    key=lambda r: r.overall_score,
-                    reverse=True,
-                )
-                if non_rejected:
-                    results = non_rejected[:5]
-                else:
-                    results = sorted(
-                        all_results,
-                        key=lambda r: r.overall_score,
-                        reverse=True,
-                    )[:5]
             st.session_state['search_performed'] = True
             st.session_state['search_results'] = results
             st.session_state['preview_doc_index'] = 0
