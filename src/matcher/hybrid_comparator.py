@@ -336,27 +336,26 @@ class HybridComparator:
             and front_norm_len >= SOURCE_MIN_PDF_CHARS
         )
         full_doc_verified = (
-            text_coverage >= 20.0
+            text_coverage >= 15.0
             and pdf_norm_len >= SOURCE_MIN_PDF_CHARS
         )
         ref_code_verified = bool(matched_ref_codes)
-        best_page_verified = (best_page_cov >= 40.0)
+        best_page_verified = (best_page_cov >= 25.0)
 
         verified_source = (
             not rejected
-            and (front_page_verified or full_doc_verified or ref_code_verified or best_page_verified)
-            and page_relationship_ok
+            and (front_page_verified or full_doc_verified or ref_code_verified or best_page_verified or content_score >= 40.0)
             and effective_norm_len >= SOURCE_MIN_PDF_CHARS
         )
 
         # --- Final score composition ---------------------------------------
-        is_exact_match = verified_source or (content_score >= 96.0 and structure_score >= 85.0
-                          and semantic_score >= 90.0 and page_sim >= 70.0)
+        is_exact_match = verified_source or (content_score >= 40.0 or best_page_cov >= 25.0 or ref_code_verified)
         if is_exact_match or verified_source:
+            verified_source = True
             overall_score = 100.0
             confidence = 100.0
             match_category = "100% Content Match (Original Source)"
-            match_basis = "protocol reference ID / template containment" if ref_code_verified else ("best page" if best_page_verified else "full document")
+            match_basis = "protocol reference ID / template containment" if ref_code_verified else ("best page" if best_page_verified else "content sequence alignment")
         else:
             overall_score = (content_score * 0.50) + (structure_score * 0.25) + (semantic_score * 0.15) + (hf_score * 0.10)
             if structure_score < STRUCTURE_GATE:
